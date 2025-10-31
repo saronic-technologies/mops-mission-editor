@@ -1,0 +1,369 @@
+{
+  "WaypointMission": {
+    "waypoints": [
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17136125626689,
+          "lat": 32.62970787099774
+        },
+        "speed_mode": {
+          "Throttle": 0.35000000000000003
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16990537880847,
+          "lat": 32.63093977992901
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16785875505084,
+          "lat": 32.63093977992901
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16785875505084,
+          "lat": 32.62919783953775
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1696840677647,
+          "lat": 32.63062506289359
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1678619723416,
+          "lat": 32.62920093496455
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16786111492146,
+          "lat": 32.63093621075973
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1699153277274,
+          "lat": 32.63093254570655
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17136363494089,
+          "lat": 32.62970597675209
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16991489226814,
+          "lat": 32.630929667353946
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16785966154278,
+          "lat": 32.63094096422358
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16786343943924,
+          "lat": 32.62919098482856
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16969880189991,
+          "lat": 32.63063127155544
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1678591815554,
+          "lat": 32.6291930473937
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16786251823808,
+          "lat": 32.63093283443409
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16990988934552,
+          "lat": 32.63092058750273
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17136045704594,
+          "lat": 32.629692519266555
+        },
+        "speed_mode": {
+          "Throttle": 0.6
+        },
+        "radius_m": 100,
+        "hold_time_s": 120
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17073476218359,
+          "lat": 32.62964795701332
+        },
+        "speed_mode": "Eco",
+        "radius_m": 20,
+        "comms_mode": {
+          "DisableAll": {}
+        }
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16996116170804,
+          "lat": 32.62966404357482
+        },
+        "speed_mode": "Eco",
+        "radius_m": 20,
+        "comms_mode": {
+          "DisableAll": {}
+        }
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16928558653393,
+          "lat": 32.629834031477735
+        },
+        "speed_mode": "Eco",
+        "radius_m": 100,
+        "comms_mode": {
+          "DisableAll": {}
+        },
+        "hold_time_s": 120
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16928187997635,
+          "lat": 32.63084906244841
+        },
+        "speed_mode": "Eco",
+        "radius_m": 35
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1695989981809,
+          "lat": 32.62642782820122
+        },
+        "speed_mode": "Eco",
+        "radius_m": 35
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17061762721919,
+          "lat": 32.63090185039957
+        },
+        "speed_mode": {
+          "Throttle": 0.3
+        },
+        "radius_m": 35
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16824509004819,
+          "lat": 32.62649297913694
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 50,
+        "hold_time_s": 120
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1719070495948,
+          "lat": 32.6304131931052
+        },
+        "speed_mode": "Eco",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16731392762874,
+          "lat": 32.62740573811565
+        },
+        "speed_mode": {
+          "Throttle": 0.3
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1720740678111,
+          "lat": 32.629413305114554
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 50,
+        "hold_time_s": 120
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1670202251724,
+          "lat": 32.62845345326814
+        },
+        "speed_mode": "Eco",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17217306756082,
+          "lat": 32.627982178339316
+        },
+        "speed_mode": {
+          "Throttle": 0.3
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16734664957733,
+          "lat": 32.6295432670349
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 50,
+        "hold_time_s": 120
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17142695463612,
+          "lat": 32.62687270881336
+        },
+        "speed_mode": "Eco",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.16811431594711,
+          "lat": 32.630304030839945
+        },
+        "speed_mode": {
+          "Throttle": 0.3
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1709600590844,
+          "lat": 32.62659239923533
+        },
+        "speed_mode": "Cruise",
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.1639570816203,
+          "lat": 32.62934763999182
+        },
+        "speed_mode": {
+          "Throttle": 0.35000000000000003
+        },
+        "radius_m": 20
+      },
+      {
+        "loc": {
+          "alt_m": 0,
+          "lon": -117.17097101345922,
+          "lat": 32.62658223358658
+        },
+        "speed_mode": {
+          "Throttle": 0.35000000000000003
+        },
+        "radius_m": 20
+      }
+    ],
+    "formation": {
+      "standoff_m": 100,
+      "formation_type": "V"
+    }
+  }
+}

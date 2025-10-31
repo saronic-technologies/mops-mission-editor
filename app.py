@@ -5,12 +5,13 @@ import sys
 import difflib
 from typing import Any, Dict, List, Tuple, Optional
 
-from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QAction, QPen, QBrush, QColor
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QEvent
+from PySide6.QtGui import QAction, QPen, QBrush, QColor, QMouseEvent
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QToolBar, QStatusBar,
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QDoubleSpinBox, QMessageBox, QGraphicsView, QGraphicsScene, QGridLayout, QTextEdit
+    QDoubleSpinBox, QMessageBox, QGraphicsView, QGraphicsScene,
+    QGridLayout, QTextEdit, QSpinBox
 )
 
 # ---------------------------
@@ -134,6 +135,24 @@ def adapt_with_offsets_merc(poly_json: Any, mission_json: Any,
 
     adapted = write_waypoints_from_ll(mission_json, refs, moved_ll)
     return adapted, {"auto_dx": auto_dx, "auto_dy": auto_dy, "dx": dx, "dy": dy}, box_xy, moved_xy
+
+# ---------------------------
+# Mission slice helpers
+# ---------------------------
+def slice_mission(mission_json: Any, start: int, end: int) -> Any:
+    """Deep-copy mission and slice waypoints [start..end] inclusive."""
+    out = json.loads(json.dumps(mission_json))
+    wps = out["WaypointMission"]["waypoints"]
+    n = len(wps)
+    start = max(0, min(start, n-1))
+    end   = max(0, min(end,   n-1))
+    if end < start:
+        start, end = end, start
+    out["WaypointMission"]["waypoints"] = wps[start:end+1]
+    return out
+
+def count_waypoints(mission_json: Any) -> int:
+    return len(mission_json["WaypointMission"]["waypoints"])
 
 # ---------------------------
 # Zoomable & Draggable GraphicsView
@@ -274,6 +293,167 @@ class Preview(QWidget):
         self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
 
 # ---------------------------
+# Timeline (click to set start/end) — with single-dot highlight + 5-step markers (1-based labels)
+# ---------------------------
+class Timeline(QWidget):
+    selectionChanged = Signal(int, int)  # start, end (0-based indices)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.view = QGraphicsView()
+        self.view.setRenderHints(self.view.renderHints())
+        self.scene = QGraphicsScene()
+        self.view.setScene(self.scene)
+        self.view.setFixedHeight(100)
+
+        lay = QVBoxLayout(self)
+        title = QLabel("Timeline (click to set start/end; Shift=force end, Ctrl=force start) — labels are 1-based")
+        title.setStyleSheet("color:#666; font-size:11px")
+        lay.addWidget(title)
+        lay.addWidget(self.view)
+
+        # state
+        self._n = 0
+        self._start = 0
+        self._end = -1
+        self._pad = 20
+        self._W = 700
+        self._H = 60
+        self._marker_r = 4
+
+        # mouse events
+        self.view.viewport().installEventFilter(self)
+
+    def set_waypoints(self, n: int):
+        self._n = max(0, n)
+        if self._end < 0 and self._n > 0:
+            self._start = 0
+            self._end = self._n - 1
+        self._draw()
+
+    def set_selection(self, start: int, end: int):
+        if self._n == 0:
+            return
+        start = max(0, min(start, self._n - 1))
+        end   = max(0, min(end,   self._n - 1))
+        if end < start:
+            start, end = end, start
+        self._start, self._end = start, end
+        self._draw()
+        self.selectionChanged.emit(self._start, self._end)
+
+    def _idx_to_x(self, idx: int) -> float:
+        if self._n <= 1:
+            return self._pad + (self._W - 2 * self._pad) / 2.0
+        frac = idx / (self._n - 1)
+        return self._pad + frac * (self._W - 2 * self._pad)
+
+    def _x_to_idx(self, x: float) -> int:
+        x = max(self._pad, min(x, self._W - self._pad))
+        span = (self._W - 2 * self._pad)
+        frac = (x - self._pad) / span if span > 0 else 0.0
+        idx = int(round(frac * (self._n - 1))) if self._n > 1 else 0
+        return max(0, min(idx, self._n - 1))
+
+    def _draw(self):
+        self.scene.clear()
+
+        # Track current viewport width dynamically
+        self._W = max(300, self.view.viewport().width())
+        W, H = self._W, self._H
+        self.scene.setSceneRect(QRectF(0, 0, W, H))
+
+        # baseline
+        y = H / 2
+        base_pen = QPen(QColor("#aaa")); base_pen.setWidthF(1.0)
+        self.scene.addLine(self._pad, y, W - self._pad, y, base_pen)
+
+        # selection visuals
+        if self._n > 0 and self._end >= self._start:
+            if self._start != self._end:
+                # range band
+                x1 = self._idx_to_x(self._start)
+                x2 = self._idx_to_x(self._end)
+                self.scene.addRect(QRectF(min(x1, x2), y - 12, abs(x2 - x1), 24),
+                                   QPen(Qt.NoPen), QBrush(QColor(32, 201, 151, 60)))
+            else:
+                # single-point selection – big highlight (halo + fill)
+                xi = self._idx_to_x(self._start)
+                halo_r = self._marker_r * 2.2
+                core_r = self._marker_r * 1.2
+                # halo ring
+                halo_pen = QPen(QColor("#20C997")); halo_pen.setWidthF(3.0)
+                self.scene.addEllipse(xi - halo_r, y - halo_r, 2 * halo_r, 2 * halo_r, halo_pen, QBrush(Qt.NoBrush))
+                # core fill
+                core_pen = QPen(Qt.NoPen); core_br = QBrush(QColor("#20C997"))
+                self.scene.addEllipse(xi - core_r, y - core_r, 2 * core_r, 2 * core_r, core_pen, core_br)
+
+        # ticks & dots
+        tick_pen_minor = QPen(QColor("#777")); tick_pen_minor.setWidthF(1.0)
+        tick_pen_major = QPen(QColor("#444")); tick_pen_major.setWidthF(1.5)
+        pt_pen = QPen(QColor("#1f77b4")); pt_br = QBrush(QColor("#1f77b4"))
+
+        for i in range(self._n):
+            xi = self._idx_to_x(i)
+
+            # every point gets a dot
+            self.scene.addEllipse(xi - self._marker_r, y - self._marker_r,
+                                  2 * self._marker_r, 2 * self._marker_r, pt_pen, pt_br)
+
+            # tick marks: major every 5th (1-based), else minor
+            label_1based = i + 1
+            if label_1based % 5 == 0:
+                # taller tick + label (1-based)
+                self.scene.addLine(xi, y - 10, xi, y + 10, tick_pen_major)
+                t = self.scene.addText(str(label_1based))
+                t.setDefaultTextColor(QColor("#333"))
+                t.setPos(xi - 6, y + 12)
+            else:
+                self.scene.addLine(xi, y - 6, xi, y + 6, tick_pen_minor)
+
+        # start/end tags (1-based labels)
+        if self._n > 0 and self._end >= self._start:
+            tags = [
+                (self._idx_to_x(self._start), f"S:{self._start + 1}"),
+                (self._idx_to_x(self._end),   f"E:{self._end + 1}")
+            ]
+            for xi, lbl in tags:
+                t = self.scene.addText(lbl)
+                t.setDefaultTextColor(QColor("#333"))
+                t.setPos(xi - 14, y - 26)
+
+        self.view.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
+
+    def eventFilter(self, obj, event):
+        if obj is self.view.viewport() and self._n > 0:
+            et = event.type()
+            if et == QEvent.MouseButtonPress:
+                if isinstance(event, QMouseEvent) and event.button() == Qt.LeftButton:
+                    if hasattr(event, "position"):
+                        pos = event.position(); x = pos.x()
+                    else:
+                        pos = event.pos(); x = pos.x()
+                    idx = self._x_to_idx(x)
+
+                    mods = event.modifiers() if hasattr(event, "modifiers") else QApplication.keyboardModifiers()
+                    if mods & Qt.ShiftModifier:
+                        self.set_selection(self._start, idx)
+                    elif mods & Qt.ControlModifier:
+                        self.set_selection(idx, self._end)
+                    else:
+                        if self._start == self._end:
+                            self.set_selection(self._start, idx)  # expand to a range
+                        else:
+                            self.set_selection(idx, idx)          # collapse to single
+                    return True
+        return super().eventFilter(obj, event)
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self._draw()
+
+
+# ---------------------------
 # Diff → HTML (highlight changed lines)
 # ---------------------------
 def json_to_pretty_lines(obj: Any) -> List[str]:
@@ -319,19 +499,24 @@ def html_highlight_changed(original_obj: Any, adapted_obj: Any) -> str:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Waypoint Route → BBox Translator (Mercator) + N/S/E/W Cross")
-        self.resize(1250, 820)
+        self.setWindowTitle("Waypoint Route → BBox Translator (Mercator) + N/S/E/W + Timeline")
+        self.resize(1300, 860)
 
         # loaded data
         self.poly_json: Optional[Any] = None
         self.mission_json: Optional[Any] = None  # original mission (baseline)
         self.adapted_json: Optional[Any] = None
 
+        # slice selection
+        self.slice_start = 0
+        self.slice_end: Optional[int] = None  # set after mission load
+
         # manual offsets in METERS (east = +x, north = +y)
         self.manual_dx_m = 0.0
         self.manual_dy_m = 0.0
 
         self.preview = Preview()
+        self.timeline = Timeline()
         self._build_ui()
 
     def _build_ui(self):
@@ -352,10 +537,11 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         left = QVBoxLayout()
         left.addWidget(self.preview)
+        left.addWidget(self.timeline)  # timeline under preview
 
         # Controls (top-right cross)
         controls = QVBoxLayout()
-        controls.addWidget(QLabel("Nudge route by step (nautical miles), or center-reset:"))
+        controls.addWidget(QLabel("Nudge route (nmi) or center:"))
 
         step_row = QHBoxLayout()
         self.step_nmi = QDoubleSpinBox()
@@ -386,12 +572,30 @@ class MainWindow(QMainWindow):
         grid.addWidget(QWidget(), 2, 2)
         controls.addLayout(grid)
 
-        # wiring
+        # Slice controls
+        slice_box = QHBoxLayout()
+        slice_box.addWidget(QLabel("Start idx:"))
+        self.start_spin = QSpinBox(); self.start_spin.setMinimum(0); self.start_spin.setMaximum(0)
+        slice_box.addWidget(self.start_spin)
+        slice_box.addWidget(QLabel("End idx:"))
+        self.end_spin = QSpinBox(); self.end_spin.setMinimum(0); self.end_spin.setMaximum(0)
+        slice_box.addWidget(self.end_spin)
+        btn_full = QPushButton("Use Full Mission")
+        slice_box.addWidget(btn_full)
+        controls.addLayout(slice_box)
+
+        # wiring: nudges
         btn_n.clicked.connect(lambda: self.nudge(0, +1))
         btn_s.clicked.connect(lambda: self.nudge(0, -1))
         btn_e.clicked.connect(lambda: self.nudge(+1, 0))
         btn_w.clicked.connect(lambda: self.nudge(-1, 0))
         btn_c.clicked.connect(self.center_reset)
+
+        # wiring: timeline & spinboxes
+        self.timeline.selectionChanged.connect(self.on_timeline_selection)
+        self.start_spin.valueChanged.connect(self.on_spin_changed)
+        self.end_spin.valueChanged.connect(self.on_spin_changed)
+        btn_full.clicked.connect(self.on_use_full)
 
         # Adapted Mission pane (larger)
         self.outputs_view = QTextEdit()
@@ -431,9 +635,20 @@ class MainWindow(QMainWindow):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 self.mission_json = json.load(f)
-            _ = read_waypoints_ll(self.mission_json)  # validate
+            refs = read_waypoints_ll(self.mission_json)  # validate
             self.mission_label.setText(f"Mission: {path}")
-            # reset manual meters and center immediately
+            # set timeline + spin bounds
+            n = len(refs)
+            self.timeline.set_waypoints(n)
+            self.start_spin.setMaximum(max(0, n-1))
+            self.end_spin.setMaximum(max(0, n-1))
+            self.slice_start = 0
+            self.slice_end = n-1
+            self.timeline.set_selection(self.slice_start, self.slice_end)
+            self.start_spin.blockSignals(True); self.end_spin.blockSignals(True)
+            self.start_spin.setValue(self.slice_start); self.end_spin.setValue(self.slice_end)
+            self.start_spin.blockSignals(False); self.end_spin.blockSignals(False)
+            # reset manual meters and render
             self.manual_dx_m = 0.0; self.manual_dy_m = 0.0
             self.apply_and_render()
             self.preview.reset_view()
@@ -445,13 +660,19 @@ class MainWindow(QMainWindow):
         if self.poly_json is None or self.mission_json is None:
             return
         try:
+            # slice the mission for adaptation
+            s = self.slice_start
+            e = self.slice_end if self.slice_end is not None else count_waypoints(self.mission_json)-1
+            base_slice = slice_mission(self.mission_json, s, e)
             adapted, xform, box_xy, moved_xy = adapt_with_offsets_merc(
-                self.poly_json, self.mission_json, self.manual_dx_m, self.manual_dy_m
+                self.poly_json, base_slice, self.manual_dx_m, self.manual_dy_m
             )
             self.adapted_json = adapted
-            self.outputs_view.setHtml(html_highlight_changed(self.mission_json, self.adapted_json))
+            # diff vs original slice (not full mission) to avoid huge green deletions
+            self.outputs_view.setHtml(html_highlight_changed(base_slice, self.adapted_json))
             self.preview.draw_xy(box_xy, moved_xy)
-            msg = (f"Auto dx={xform['auto_dx']:.1f} m, dy={xform['auto_dy']:.1f} m | "
+            msg = (f"Slice [{s}..{e}] ({count_waypoints(base_slice)} WPs) | "
+                   f"Auto dx={xform['auto_dx']:.1f} m, dy={xform['auto_dy']:.1f} m | "
                    f"Manual dx={self.manual_dx_m:.1f} m, dy={self.manual_dy_m:.1f} m")
             self.status.showMessage(msg, 6000)
         except Exception as e:
@@ -472,6 +693,35 @@ class MainWindow(QMainWindow):
         self.manual_dy_m = 0.0
         self.apply_and_render()
         self.preview.reset_view()
+
+    # ---- Slice wiring
+    def on_timeline_selection(self, start: int, end: int):
+        if self.mission_json is None:
+            return
+        if end < start:
+            start, end = end, start
+        self.slice_start, self.slice_end = start, end
+        # sync spins without feedback loops
+        self.start_spin.blockSignals(True); self.end_spin.blockSignals(True)
+        self.start_spin.setValue(start); self.end_spin.setValue(end)
+        self.start_spin.blockSignals(False); self.end_spin.blockSignals(False)
+        self.apply_and_render()
+
+    def on_spin_changed(self):
+        if self.mission_json is None:
+            return
+        s = self.start_spin.value()
+        e = self.end_spin.value()
+        if e < s:
+            s, e = e, s
+        self.slice_start, self.slice_end = s, e
+        self.timeline.set_selection(s, e)  # emits selectionChanged → apply_and_render via signal
+
+    def on_use_full(self):
+        if self.mission_json is None:
+            return
+        n = count_waypoints(self.mission_json)
+        self.timeline.set_selection(0, n-1)  # will emit and re-render
 
     # ---- Save
     def save_adapted(self):
